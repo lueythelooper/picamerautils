@@ -1,0 +1,6 @@
+#!/bin/bash
+rpicam-vid -t 0 \
+   --gain 10.0 \
+   --width 1920 --height 1080 --codec=h264 \
+   --framerate 15 \
+   -n --inline -o - | python3 /home/adam/flask_server.py

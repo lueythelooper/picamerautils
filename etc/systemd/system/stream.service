@@ -1,0 +1,11 @@
+[Unit]
+Description=PiCamv3 Camera Stream over Flask
+After=network.target
+
+[Service]
+Type=simple
+Restart=always
+ExecStart=/usr/bin/simple-stream
+
+[Install]
+WantedBy=multi-user.target
