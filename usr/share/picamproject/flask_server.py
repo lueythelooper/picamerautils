@@ -2,6 +2,10 @@ from flask import Flask, Response
 import cv2
 import threading
 import queue
+import sys
+
+width = int(sys.argv[1])
+height = int(sys.argv[2])
 
 app = Flask(__name__)
 
@@ -12,8 +16,8 @@ class VideoCamera:
     def __init__(self):
         # Open pipeline via OpenCV
         self.cap = cv2.VideoCapture("/dev/stdin")
-        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640);
-        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480);
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, width);
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height);
         self.frame = None
         self.lock = threading.Lock()
         self.running = True
@@ -66,12 +70,12 @@ def video_feed():
 
 @app.route('/')
 def index():
-    return '''
+    return f'''
     <html>
         <head><title>GStreamer Stream</title></head>
         <body>
             <h1>Live Stream</h1>
-            <img src="/video_feed" width="1920" height="1080" />
+            <img src="/video_feed" width="{width}" height="{height}" />
         </body>
     </html>
     '''
