@@ -1,6 +1,14 @@
 #!/bin/bash
+
+if command -v rpicam-vid &> /dev/null; then
+    echo ""
+else
+    echo "ERROR: Install rpicam-vid on this machine"
+    exit -1
+fi
+
 rpicam-vid -t 0 \
-   --gain 10.0 \
+   --gain 2.0 \
    --width 1920 --height 1080 --codec=h264 \
-   --framerate 15 \
-   -n --inline -o - | python3 /home/adam/flask_server.py
+   --framerate 15 --denoise cdn_off \
+   -n --inline -o - | python3 /usr/share/picamproject/flask_server.py
