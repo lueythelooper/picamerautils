@@ -1,9 +1,13 @@
 from flask import Flask, Response
 import cv2
+import numpy as np
 import time
 import threading
 import queue
 import sys
+from picamera2 import Picamera2, Preview
+from libcamera import Transform
+from libcamera import controls
 
 width = int(sys.argv[1])
 height = int(sys.argv[2])
@@ -14,12 +18,37 @@ app = Flask(__name__)
 # Define the current session index for connected sessions
 current_index = 0
 
+class PiCameraCapture:
+    # Define some constants
+    ANALOG_GAIN = 10
+
+    """
+    Initialize the camera capture class
+
+    Provide width and height
+    """
+    def __init__(self, width, height):
+        self._width = width
+        self._height = height
+
+        # Initialize the picam object
+        self.picam2 = Picamera2()
+        camera_config = self.picam2.create_still_configuration({"format": "BGR888", "size": (self._width,self._height)}, transform=Transform(hflip=0,vflip=0))
+        self.picam2.configure(camera_config)
+
+        self.picam2.start()
+        self.picam2.set_controls({"AnalogueGain": self.ANALOG_GAIN})
+
+    def __del__(self):
+        self.picam2.stop()
+
+    def get_frame(self):
+        return self.picam2.capture_array()
+
 class VideoCamera:
     def __init__(self):
         # Open pipeline via OpenCV
-        self.cap = cv2.VideoCapture("/dev/stdin")
-        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, width);
-        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height);
+        self.cap = PiCameraCapture(width,height)
         self.frame = None
         self.lock = threading.Lock()
         self.running = True
@@ -29,13 +58,12 @@ class VideoCamera:
 
     def update(self):
         while self.running:
-            ret, frame = self.cap.read()
+            frame = self.cap.get_frame()
             if frame is not None:
+                ret, jpeg = cv2.imencode('.jpg', frame)
                 if ret:
-                    ret, jpeg = cv2.imencode('.jpg', frame)
-                    if ret:
-                        with self.lock:
-                            self.frame = jpeg.tobytes()
+                    with self.lock:
+                        self.frame = jpeg.tobytes()
 
     def get_frame(self):
         with self.lock:
@@ -46,6 +74,8 @@ camera = VideoCamera()
 sleep_time = (1 / (framerate+1))
 
 def generate():
+    # Preallocate a numpy array for the frame
+    frame = None
     while True:
         frame = camera.get_frame()
         if frame is None:
