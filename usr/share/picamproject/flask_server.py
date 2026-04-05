@@ -1,11 +1,13 @@
 from flask import Flask, Response
 import cv2
+import time
 import threading
 import queue
 import sys
 
 width = int(sys.argv[1])
 height = int(sys.argv[2])
+framerate = int(sys.argv[3])
 
 app = Flask(__name__)
 
@@ -28,37 +30,27 @@ class VideoCamera:
     def update(self):
         while self.running:
             ret, frame = self.cap.read()
-            if ret:
-                with self.lock:
-                    self.frame = frame
+            if frame is not None:
+                if ret:
+                    ret, jpeg = cv2.imencode('.jpg', frame)
+                    if ret:
+                        with self.lock:
+                            self.frame = jpeg.tobytes()
 
     def get_frame(self):
         with self.lock:
-            if self.frame is None:
-                return None
-            ret, jpeg = cv2.imencode('.jpg', self.frame)
-            return jpeg.tobytes() if ret else None
+            return self.frame
 
 camera = VideoCamera()
 
-def generate_frames():
-    while True:
-        frame = camera.get_frame()
-        if frame is None:
-            continue
-
-        # Encode as JPEG
-        ret, buffer = cv2.imencode('.jpg', frame)
-        frame_bytes = buffer.tobytes()
-
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+sleep_time = (1 / (framerate+1))
 
 def generate():
     while True:
         frame = camera.get_frame()
         if frame is None:
             continue
+        time.sleep(sleep_time)
 
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')

@@ -9,10 +9,10 @@ fi
 
 WIDTH=640
 HEIGHT=480
-FRAMERATE=20
+FRAMERATE=15
 
 rpicam-vid -t 0 \
-   --gain 2.0 \
+   --gain 1.0 \
    --width $WIDTH --height $HEIGHT --codec=h264 \
    --framerate $FRAMERATE --denoise cdn_off \
-   -n --inline -o - | python3 /usr/share/picamproject/flask_server.py $WIDTH $HEIGHT
+   -n --inline -o - | python3 /usr/share/picamproject/flask_server.py $WIDTH $HEIGHT $FRAMERATE
