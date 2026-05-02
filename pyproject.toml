@@ -12,4 +12,21 @@ requires-python = ">=3.12"
 authors = [
     {name = "LueyTheLooper", email = "adamlsherwin@gmail.com"}
 ]
+dependencies = [
+    "opencv-python",
+    "flask",
+    "numpy",
+    "picamera2",
+]
+
+[project.scripts]
+my-app = "picamerautils.apps.flask_server:main"
+
+[tool.setuptools.packages.find]
+# "where" tells setuptools to look for packages inside the "src" directory
+where = ["src"]
+# "include" can be used to limit discovery to specific patterns
+include = ["*"]
+# Set to false if you do not want to use PEP 420 namespace packages
+namespaces = false
 

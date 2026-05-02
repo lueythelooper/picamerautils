@@ -1,6 +1,0 @@
-pyproject.toml
-src/picamerautils/__init__.py
-src/picamerautils.egg-info/PKG-INFO
-src/picamerautils.egg-info/SOURCES.txt
-src/picamerautils.egg-info/dependency_links.txt
-src/picamerautils.egg-info/top_level.txt
