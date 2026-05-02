@@ -20,7 +20,7 @@ dependencies = [
 ]
 
 [project.scripts]
-my-app = "picamerautils.apps.flask_server:main"
+simple-stream = "picamerautils.apps.flask_server:main"
 
 [tool.setuptools.packages.find]
 # "where" tells setuptools to look for packages inside the "src" directory
