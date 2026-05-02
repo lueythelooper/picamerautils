@@ -1,0 +1,58 @@
+#!/usr/bin/python3
+import cv2
+import numpy as np
+import time
+import threading
+import queue
+import sys
+from picamera2 import Picamera2, Preview
+from libcamera import Transform
+from libcamera import controls
+
+width = int(sys.argv[1])
+height = int(sys.argv[2])
+
+class PiCameraCapture:
+    # Define some constants
+    ANALOG_GAIN = 4
+
+    """
+    Initialize the camera capture class
+
+    Provide width and height
+    """
+    def __init__(self, width, height):
+        self._width = width
+        self._height = height
+
+        # Initialize the picam object
+        self.picam2 = Picamera2()
+        camera_config = self.picam2.create_video_configuration({"format": "BGR888", "size": (self._width,self._height)}, transform=Transform(hflip=0,vflip=0),
+          controls={"FrameDurationLimits": (1000, 20000000)})
+        self.picam2.configure(camera_config)
+        self.picam2.controls.ExposureTime = 1000000
+        self.picam2.controls.AnalogueGain = 4
+
+        self.picam2.start()
+
+    def __del__(self):
+        self.picam2.stop()
+
+    def get_frame(self):
+        return self.picam2.capture_array()
+
+
+
+if __name__ == "__main__":
+    cap = PiCameraCapture(width,height)
+    frame_init = cap.get_frame().astype(np.float32) / 255
+    integrate = 20
+    index = 0
+    while index < integrate:
+        frame_init += cap.get_frame().astype(np.float32) / 255
+        print ("Frame ", index)
+        index += 1
+
+    final_frame = frame_init / (integrate+1) * 65535 * 8
+
+    cv2.imwrite("out.tiff", final_frame.astype(np.uint16))
