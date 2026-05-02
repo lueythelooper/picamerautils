@@ -67,6 +67,9 @@ class VideoCamera:
         thread = threading.Thread(target=self.update, daemon=True)
         thread.start()
 
+        self.gain_index = 0
+        self.exposure_index = 0
+
     def update(self):
         start_time = time.perf_counter()
         while self.running:
@@ -126,6 +129,8 @@ def update_exposure():
     exposure_to_set = exposure_list[slider_value_to_update]
     app.logger.info("Slider: ", slider_value_to_update, " and exposure: ", exposure_to_set)
     camera.cap.picam2.controls.ExposureTime = exposure_to_set
+
+    camera.exposure_index = slider_value_to_update
     
     # Process value (e.g., update a database or control a device)
     print(f"Slider value received: {slider_value}")
@@ -140,17 +145,19 @@ def update_gain():
     app.logger.info("Slider: ", slider_value_to_update)
     gain_to_set = gain_list[slider_value_to_update]
     camera.cap.picam2.controls.AnalogueGain = gain_to_set
+
+    camera.gain_index = slider_value_to_update 
     
     # Process value (e.g., update a database or control a device)
     print(f"Slider value received: {slider_value}")
     return jsonify({"status": "success", "received_value": gain_to_set})
 
-def generate_slider_html(slider_values, slider_name):
+def generate_slider_html(slider_values, slider_name, current_index):
     app.logger.info(len(slider_values)-1)
     div_class_string = f'''<label for="volume">{slider_name} ({slider_values[0]}-{slider_values[-1]}):</label>
     <div class="slidecontainer">
         <label for="{slider_name}">{slider_name}:</label>
-        <input type="range" min="0" max="{len(slider_values)-1}" value="1" class="slider" id="{slider_name}">
+        <input type="range" min="0" max="{len(slider_values)-1}" value="{current_index}" class="slider" id="{slider_name}">
         <p>Value: <span id="{slider_name}Value">1</span></p>
     </div>'''
 
@@ -183,15 +190,12 @@ def index():
         <head><title>GStreamer Stream</title></head>
         <body>
             <h1>Live Stream</h1>
-            {generate_slider_html(exposure_list, "exposure")}
-            {generate_slider_html(gain_list, "gain")}
+            {generate_slider_html(exposure_list, "exposure", camera.exposure_index)}
+            {generate_slider_html(gain_list, "gain", camera.gain_index)}
             <img src="/video_feed" width="{width}" height="{height}" />
         </body>
     </html>
     '''
-
-    print (stringsss)
-    app.logger.info(stringsss)
 
     return stringsss
 
