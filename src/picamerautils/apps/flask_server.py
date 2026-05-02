@@ -8,6 +8,7 @@ import sys
 from picamera2 import Picamera2, Preview
 from libcamera import Transform
 from libcamera import controls
+from picamerautils.controllers.hq_camera import PiCameraCapture,VideoCamera,EXPOSURE_LIST,GAIN_LIST
 
 width = int(sys.argv[1])
 height = int(sys.argv[2])
@@ -18,78 +19,10 @@ app = Flask(__name__)
 # Define the current session index for connected sessions
 current_index = 0
 
-exposure_list = [1000,5000,10000,15000,20000,30000,40000,50000,70000,100000,500000,1000000,2000000,5000000,10000000]
-gain_list = [1,2,3,4,5,7,10,15,20]
 
 sleep_time = (1 / (framerate+2))
 
-class PiCameraCapture:
-    # Define some constants
-    ANALOG_GAIN = 1
-
-    """
-    Initialize the camera capture class
-
-    Provide width and height
-    """
-    def __init__(self, width, height):
-        self._width = width
-        self._height = height
-
-        # Initialize the picam object
-        self.picam2 = Picamera2()
-        camera_config = self.picam2.create_video_configuration({"format": "BGR888", "size": (self._width,self._height)}, transform=Transform(hflip=0,vflip=0),
-          controls={"FrameDurationLimits": (exposure_list[0], exposure_list[-1])})
-        self.picam2.configure(camera_config)
-        self.picam2.controls.ExposureTime = exposure_list[0]
-        self.picam2.controls.AnalogueGain = gain_list[0]
-
-        self.picam2.start()
-
-    def __del__(self):
-        self.picam2.stop()
-
-    def get_frame(self):
-        return self.picam2.capture_array()
-
-class VideoCamera:
-    def __init__(self):
-        # Open pipeline via OpenCV
-        self.cap = PiCameraCapture(width,height)
-        self.raw_frame = None
-        self.rgb_image = None
-        self.frame = None
-        self.lock = threading.Lock()
-        self.jpeg = None
-        self.running = True
-        self.grabbed_frames = 0
-
-        thread = threading.Thread(target=self.update, daemon=True)
-        thread.start()
-
-        self.gain_index = 0
-        self.exposure_index = 0
-
-    def update(self):
-        start_time = time.perf_counter()
-        while self.running:
-            self.raw_frame = self.cap.get_frame()
-            if self.raw_frame is not None:
-                self.grabbed_frames += 1
-                self.rgb_image = cv2.cvtColor(self.raw_frame, cv2.COLOR_BGR2RGB)
-                ret, self.jpeg = cv2.imencode('.jpg', self.rgb_image)
-                if ret:
-                    with self.lock:
-                        self.frame = self.jpeg.tobytes()
-            if self.grabbed_frames % 100 == 0:
-                print (f"Average framerate: { self.grabbed_frames / (time.perf_counter() - start_time) }")
-            time.sleep(sleep_time/2)
-
-    def get_frame(self):
-        with self.lock:
-            return self.frame
-
-camera = VideoCamera()
+camera = VideoCamera(width,height,framerate)
 
 frames_unsafe = 0
 
@@ -126,7 +59,7 @@ def update_exposure():
     slider_value = data.get('value')
 
     slider_value_to_update = int(slider_value)
-    exposure_to_set = exposure_list[slider_value_to_update]
+    exposure_to_set = EXPOSURE_LIST[slider_value_to_update]
     app.logger.info("Slider: ", slider_value_to_update, " and exposure: ", exposure_to_set)
     camera.cap.picam2.controls.ExposureTime = exposure_to_set
 
@@ -143,7 +76,7 @@ def update_gain():
 
     slider_value_to_update = int(slider_value)
     app.logger.info("Slider: ", slider_value_to_update)
-    gain_to_set = gain_list[slider_value_to_update]
+    gain_to_set = GAIN_LIST[slider_value_to_update]
     camera.cap.picam2.controls.AnalogueGain = gain_to_set
 
     camera.gain_index = slider_value_to_update 
@@ -190,8 +123,8 @@ def index():
         <head><title>GStreamer Stream</title></head>
         <body>
             <h1>Live Stream</h1>
-            {generate_slider_html(exposure_list, "exposure", camera.exposure_index)}
-            {generate_slider_html(gain_list, "gain", camera.gain_index)}
+            {generate_slider_html(EXPOSURE_LIST, "exposure", camera.exposure_index)}
+            {generate_slider_html(GAIN_LIST, "gain", camera.gain_index)}
             <img src="/video_feed" width="{width}" height="{height}" />
         </body>
     </html>
