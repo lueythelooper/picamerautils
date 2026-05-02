@@ -119,13 +119,48 @@ def generate_slider_html(slider_values, slider_name, current_index):
 @app.route('/')
 def index():
     stringsss = f'''
+    <!DOCTYPE html>
     <html>
-        <head><title>GStreamer Stream</title></head>
+        <head>
+            <title>GStreamer Stream</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+                body {{
+                    background-color: #1a1a1a;
+                    color: white;
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                    text-align: center;
+                    margin: 0;
+                    padding: 0;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    height: 100vh;
+                }}
+                h2 {{ margin-bottom: 10px; font-weight: 300; }}
+                .stream-container {{
+                    width: 95%;
+                    max-width: 640px;
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+                    border-radius: 12px;
+                    overflow: hidden;
+                    background-color: black;
+                }}
+                img {{
+                    width: 100%;
+                    height: auto;
+                    display: block;
+                }}
+            </style>
+        </head>
         <body>
-            <h1>Live Stream</h1>
             {generate_slider_html(EXPOSURE_LIST, "exposure", camera.exposure_index)}
             {generate_slider_html(GAIN_LIST, "gain", camera.gain_index)}
-            <img src="/video_feed" width="{width}" height="{height}" />
+            <h2>Live Stream</h2>
+            <div class="stream-container">
+                <img src="/video_feed" width="{width}" height="{height}" />
+            </div>
         </body>
     </html>
     '''

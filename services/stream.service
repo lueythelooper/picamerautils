@@ -5,7 +5,7 @@ After=network.target
 [Service]
 Type=simple
 Restart=always
-ExecStart=/usr/bin/simple-stream
+ExecStart=/home/adam/git/PiCamProject/env/bin/simple-stream 1280 720 15
 
 [Install]
 WantedBy=multi-user.target
