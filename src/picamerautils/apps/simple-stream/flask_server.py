@@ -66,7 +66,7 @@ def update_exposure():
     camera.exposure_index = slider_value_to_update
     
     # Process value (e.g., update a database or control a device)
-    print(f"Slider value received: {slider_value}")
+    print(f"Slider value received: {slider_value}, setting exposure: {exposure_to_set}")
     return jsonify({"status": "success", "received_value": exposure_to_set})
 
 @app.route('/update_gain', methods=['POST'])
@@ -87,29 +87,41 @@ def update_gain():
 
 def generate_slider_html(slider_values, slider_name, current_index):
     app.logger.info(len(slider_values)-1)
-    div_class_string = f'''<label for="volume">{slider_name} ({slider_values[0]}-{slider_values[-1]}):</label>
+    div_class_string = f'''
     <div class="slidecontainer">
         <label for="{slider_name}">{slider_name}:</label>
         <input type="range" min="0" max="{len(slider_values)-1}" value="{current_index}" class="slider" id="{slider_name}">
-        <p>Value: <span id="{slider_name}Value">1</span></p>
-    </div>'''
+    </div>
+    <p>Value: <span id="{slider_name}Value">1</span></p>
+    '''
 
     js_string = f'''<script>
             const {slider_name}slider = document.getElementById("{slider_name}");
             const {slider_name}output = document.getElementById("{slider_name}Value");
             {slider_name}slider.oninput = function() {{
                 const val = this.value;
-                {slider_name}output.innerHTML = val; // Immediate UI update
 
                 // Send value to Flask backend
-                fetch('/update_{slider_name}', {{
+                const response = fetch('/update_{slider_name}', {{
                     method: 'POST',
                     headers: {{ 'Content-Type': 'application/json' }},
                     body: JSON.stringify({{ value: val }})
                 }})
-                .then(response => response.json())
-                .then(data => console.log('Server response:', data))
+                .then((response) => {{
+                    // Check if the request was successful
+                    if (!response.ok) {{
+                      throw new Error(`HTTP error! Status: ${{response.status}}`);
+                    }}
+                    // Parse the response body as JSON
+                    return response.json();
+                }})
+                .then((data) => {{
+                    // Work with the actual JSON data here
+                    console.log(data);
+                    {slider_name}output.innerHTML = data.received_value;
+                }})
                 .catch(error => console.error('Error:', error));
+
             }}
         </script>'''
 
