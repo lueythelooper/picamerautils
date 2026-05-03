@@ -147,6 +147,19 @@ def index():
                     overflow: hidden;
                     background-color: black;
                 }}
+                .slidecontainer {{
+                /* Container padding helps prevent accidental screen edge swipes */
+                    padding: 20px;
+                    width: 100%;
+                }}
+                .slider {{
+                    -webkit-appearance: none;  /* Hides default styles */
+                    width: 100%;               /* Full width for easier touch */
+                    height: 10px;              /* Thicker track for mobile */
+                    background: #ddd;
+                    border-radius: 5px;
+                    outline: none;
+                }}
                 img {{
                     width: 100%;
                     height: auto;
@@ -161,6 +174,14 @@ def index():
             <div class="stream-container">
                 <img src="/video_feed" width="{width}" height="{height}" />
             </div>
+            <form method="POST">
+                <label>
+                    <input type="radio" name="hvflip" value="Upright" onchange="this.form.submit()"> Option 1
+                </label><br>
+                <label>
+                    <input type="radio" name="hvflip" value="UpsideDown" onchange="this.form.submit()"> Option 2
+                </label><br>
+            </form>
         </body>
     </html>
     '''
