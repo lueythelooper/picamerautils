@@ -102,6 +102,19 @@ def update_exposure():
     print(f"Slider value received: {slider_value}")
     return jsonify({"status": "success", "received_value": slider_value_to_update, "control_value": exposure_to_set})
 
+@app.route('/start_record', methods=['POST'])
+def start_record():
+    data = request.get_json()
+    slider_value = data.get('time_minutes')
+    if slider_value is not None:
+        video_recorder.set_minutes(int(slider_value))
+    else:
+        video_recorder.set_minutes(-1)
+    video_recorder.start_record()
+
+    # Process value (e.g., update a database or control a device)
+    return jsonify({"status": "success"})
+
 def main():
     queue_splitter.start()
     hq_camera_controller.start()
