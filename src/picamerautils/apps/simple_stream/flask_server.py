@@ -31,7 +31,7 @@ queue_splitter.add_output_queue(to_framerate_output_queue)
 queue_splitter.add_output_queue(to_recorder_output_queue)
 framerate_balancer = FramerateLoadBalancer(to_framerate_output_queue, framerate)
 hq_camera_controller = PiCameraCapture(width,height,video_input_queue,framerate)
-video_recorder = VideoRecorder(to_recorder_output_queue,"/mnt/data/", (width,height))
+video_recorder = VideoRecorder(to_recorder_output_queue,"/mnt/data/", (width,height), framerate)
 
 app = Flask(__name__)
 CORS(app)
@@ -50,7 +50,6 @@ def generate():
             continue
 
         resize_frame = cv2.resize(frame, (OUT_WIDTH,OUT_HEIGHT))
-
         ret, jpeg = cv2.imencode('.jpg', resize_frame)
 
         global frames_unsafe
@@ -110,7 +109,6 @@ def main():
     video_recorder.start()
 
     app.run(host="0.0.0.0", port=5000, threaded=True)
-    print ("I need to skib")
     video_recorder.stop()
     framerate_balancer.stop()
     queue_splitter.stop()

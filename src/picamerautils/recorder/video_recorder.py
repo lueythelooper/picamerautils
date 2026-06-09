@@ -5,7 +5,7 @@ import cv2
 import os
 
 class VideoRecorder(Thread):
-    def __init__(self, inputQueue, directory, imageSizeTuple):
+    def __init__(self, inputQueue, directory, imageSizeTuple, frameRate):
         super().__init__()
         self.name = "Queue Splitter"
 
@@ -13,7 +13,7 @@ class VideoRecorder(Thread):
         self.save_directory = directory
 
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        self.cap = cv2.VideoWriter(self.get_name(), fourcc, 15, imageSizeTuple)
+        self.cap = cv2.VideoWriter(self.get_name(), fourcc, frameRate, imageSizeTuple)
 
         self._stop_event = Event()  # Stop hook trigger
 
@@ -43,4 +43,6 @@ class VideoRecorder(Thread):
                 self.input_queue.clear()
             item = self.input_queue.get()
             self.cap.write(item)
+
+        print ("Releasing cap!")
         self.cap.release()
