@@ -15,6 +15,7 @@ authors = [
 dependencies = [
     "opencv-python",
     "flask",
+    "flask_cors",
     "numpy",
     "picamera2",
 ]
