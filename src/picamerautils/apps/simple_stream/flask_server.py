@@ -11,7 +11,7 @@ from libcamera import Transform
 from libcamera import controls
 from picamerautils.controllers.hq_camera import PiCameraCapture,FramerateLoadBalancer,EXPOSURE_LIST,GAIN_LIST
 from picamerautils.controllers.queue_splitter import QueueSplitter
-from picamerautils.recorder.video_recorder import VideoRecorder
+from picamerautils.recorder.video_recorder import VideoRecorder, COMMAND_RECORD, COMMAND_STOP
 
 
 width = int(sys.argv[1])
@@ -26,12 +26,13 @@ OUT_HEIGHT = 480
 video_input_queue = queue.Queue()
 to_framerate_output_queue = queue.Queue()
 to_recorder_output_queue = queue.Queue()
+to_recorder_command_queue = queue.Queue()
 queue_splitter = QueueSplitter(video_input_queue)
 queue_splitter.add_output_queue(to_framerate_output_queue)
 queue_splitter.add_output_queue(to_recorder_output_queue)
 framerate_balancer = FramerateLoadBalancer(to_framerate_output_queue, framerate)
 hq_camera_controller = PiCameraCapture(width,height,video_input_queue,framerate)
-video_recorder = VideoRecorder(to_recorder_output_queue,"/mnt/data/", (width,height), framerate)
+video_recorder = VideoRecorder(to_recorder_output_queue,to_recorder_command_queue,"/mnt/data/", (width,height), framerate)
 
 app = Flask(__name__)
 CORS(app)
@@ -101,6 +102,24 @@ def update_exposure():
     # Process value (e.g., update a database or control a device)
     print(f"Slider value received: {slider_value}")
     return jsonify({"status": "success", "received_value": slider_value_to_update, "control_value": exposure_to_set})
+
+@app.route('/start_record', methods=['POST'])
+def start_record():
+    to_recorder_command_queue.put(COMMAND_RECORD)
+    
+    # Process value (e.g., update a database or control a device)
+    print(f"START RECORDING")
+    return jsonify({"status": "success"})
+
+@app.route('/stop_record', methods=['POST'])
+def stop_record():
+    to_recorder_command_queue.put(COMMAND_STOP)
+    
+    # Process value (e.g., update a database or control a device)
+    print(f"STOP_RECORDING")
+    return jsonify({"status": "success"})
+
+
 
 def main():
     queue_splitter.start()

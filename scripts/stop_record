@@ -1,0 +1,6 @@
+#!/bin/bash
+
+curl -i -X \
+	POST http://192.168.1.185:5000/stop_record \
+	-H "Content-Type: application/json" \
+	-d "{}"
