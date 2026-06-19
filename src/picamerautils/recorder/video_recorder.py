@@ -82,5 +82,6 @@ class VideoRecorder(Thread):
             # increment interation counter
             command_queue_check_counter = command_queue_check_counter + 1
 
-        print ("Releasing cap!")
-        self.cap.release()
+        if self.recording_video:
+            self.cap.release()
+            self.recording_video = False
