@@ -9,6 +9,8 @@ COMMAND_RECORD = 0
 COMMAND_STOP = 1
 
 class VideoRecorder(Thread):
+    DUMP_FRAMES_COUNT = 20
+
     def __init__(self, inputQueue, commandQueue, directory, imageSizeTuple, frameRate):
         super().__init__()
         self.name = "Queue Splitter"
@@ -47,8 +49,9 @@ class VideoRecorder(Thread):
         """
         command_queue_check_counter = 0
         while not self._stop_event.is_set():
-            if self.input_queue.qsize() > 20:
-                for data_index in range(0, 19):
+            if self.input_queue.qsize() > self.DUMP_FRAMES_COUNT:
+                print (f"WARN: Dumping {self.DUMP_FRAMES_COUNT} frames")
+                for data_index in range(0, self.DUMP_FRAMES_COUNT-1):
                     self.input_queue.get()
             item = self.input_queue.get()
 
