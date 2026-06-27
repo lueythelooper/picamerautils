@@ -1,40 +1,10 @@
-from picamera2 import Picamera2, Preview
-from libcamera import Transform
-from libcamera import controls
 import time
 import cv2
 import os
 from datetime import datetime
+from threading import Event, Thread
 
 DIRECTORY = "/data/motiondetector/"
-
-
-class PiCameraCapture:
-    # Define some constants
-    ANALOG_GAIN = 10
-
-    """
-    Initialize the camera capture class
-
-    Provide width and height
-    """
-    def __init__(self, width, height):
-        self._width = width
-        self._height = height
-
-        # Initialize the picam object
-        self.picam2 = Picamera2()
-        camera_config = self.picam2.create_still_configuration({"format": "BGR888", "size": (self._width,self._height)}, transform=Transform(hflip=0,vflip=0))
-        self.picam2.configure(camera_config)
-
-        self.picam2.start()
-        self.picam2.set_controls({"AnalogueGain": self.ANALOG_GAIN})
-
-    def __del__(self):
-        self.picam2.stop()
-
-    def get_frame(self):
-        return self.picam2.capture_array()
 
 class MotionDetector():
     ALPHA_BACKGROUND = 0.05
@@ -79,54 +49,76 @@ class MotionDetector():
         else:
             return True
 
-def main():
-    width = 4608
-    height = 2592
+class MotionDetectorProcess(Thread):
+    DUMP_FRAMES_COUNT = 20
 
-    OUT_WIDTH = 640
-    OUT_HEIGHT = 480
+    def __init__(self, inputQueue, directory, imageSizeTuple, frameRate):
+        super().__init__()
+        self.name = "Motion Detector Process"
 
-    camera = PiCameraCapture(width,height)
+        self.input_queue = inputQueue
+        self.save_directory = directory
 
-    #picam2.set_controls({"AfMode": controls.AfModeEnum.Manual, "LensPosition": 1.0/distance})
+        self.frame_rate = frameRate
+        self.image_size_tuple = imageSizeTuple
+        self._stop_event = Event()  # Stop hook trigger
 
-    # Define the GStreamer output pipeline
-    # 'appsrc ! videoconvert ! x264enc tune=zerolatency ! mpegtsmux ! udpsink host=127.0.0.1 port=5000'
-    # The pipeline takes frames from appsrc, converts them, encodes them to h264,
-    # multiplexes them, and sends them to a UDP sink.
-    gst_out_pipeline = (
-        f"appsrc ! video/x-raw,width={OUT_WIDTH},height={OUT_HEIGHT} ! videoconvert ! x264enc ! h264parse ! "
-        " mpegtsmux ! tcpserversink port=8080 host=0.0.0.0"
-    )
+        self.motion_detector = MotionDetector()
 
-    # Open the VideoWriter with the GStreamer pipeline
-    # The '0' is for the default fourcc code, which is ignored when using a GStreamer pipeline string
-    out = cv2.VideoWriter(gst_out_pipeline, cv2.CAP_GSTREAMER, 0, (5), (OUT_WIDTH, OUT_HEIGHT), True)
+        self.recording_video = False
 
-    if not out.isOpened():
-        print("Cannot open GStreamer writer. Check pipeline and build configuration.")
-        exit(0)
+    def get_name(self):
+        if os.path.exists(self.save_directory):
+            filename = os.path.join(self.save_directory,datetime.now().strftime("%y%m%d_%H%M%S.mp4"))
+            return filename
 
-    detector = MotionDetector()
+    def start(self):
+        """Start hook: Called before the thread's run() method."""
+        print("[Start Hook] Thread is being initialized/started...")
+        super().start()
 
-    # Initialize the first frame as the static background
-    background = None
-    while (True):
-        # Slow the framerate so we can make the processing timeline
-        time.sleep(0.2)
-        frame = camera.get_frame()
-        rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        rgb_resize = cv2.resize(rgb_image, (OUT_WIDTH,OUT_HEIGHT))
-        # Always write to pipeline
-        out.write(rgb_resize)
+    def stop(self):
+        """Stop hook: Sets the event flag to signal a graceful shutdown."""
+        print("[Stop Hook] Stop signal received. Waiting for thread to finish...")
+        self._stop_event.set()
 
-        if detector.detect_motion(rgb_image):
-            # Get current date and time
-            now = datetime.now()
+    def run(self):
+        """
+        This class just grabs frames and dumps to a queue
+        It also checks a queue periodically for configuration updates,
+        and updates the camera config upon new items
+        """
+        command_queue_check_counter = 0
+        while not self._stop_event.is_set():
+            if self.input_queue.qsize() > self.DUMP_FRAMES_COUNT:
+                print (f"WARN: Dumping {self.DUMP_FRAMES_COUNT} frames")
+                for data_index in range(0, self.DUMP_FRAMES_COUNT-1):
+                    self.input_queue.get()
+            item = self.input_queue.get()
+            video_resized = cv2.resize(item, (640, 480))
 
-            # Format as string: Month/Day/Year, Hour:Minute:Second
-            formatted_datetime = now.strftime("Image_%Y%m%d_%H:%M:%S.png")
-            cv2.imwrite(DIRECTORY + "/" + formatted_datetime, rgb_image)
+            if self.motion_detector.detect_motion(video_resized):
+                if self.recording_video:
+                    # Extend video record for 2 seconds
+                    self.end_record_time += 2
+                else:
+                    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+                    self.cap = cv2.VideoWriter(self.get_name(), fourcc, self.frame_rate, self.image_size_tuple)
+                    self.recording_video = True
+                    self.end_record_time = time.time() + 2
+            else:
+                if self.recording_video:
+                    if time.time() > self.end_record_time:
+                        self.cap.release()
+                        self.cap = None
+                        self.recording_video = False
 
-if __name__ == "__main__":
-    main()
+            if self.recording_video:
+                self.cap.write(item)
+
+            # increment interation counter
+            command_queue_check_counter = command_queue_check_counter + 1
+
+        if self.recording_video:
+            self.cap.release()
+            self.recording_video = False
