@@ -12,7 +12,7 @@ from libcamera import controls
 from picamerautils.controllers.hq_camera import PiCameraCapture,FramerateLoadBalancer,EXPOSURE_LIST,GAIN_LIST
 from picamerautils.controllers.queue_splitter import QueueSplitter
 from picamerautils.recorder.video_recorder import VideoRecorder, COMMAND_RECORD, COMMAND_STOP
-from picamerautil.motion_detector.motion_detector import MotionDetectorProcess
+from picamerautils.motion_detector.motion_detector import MotionDetectorProcess
 
 
 width = int(sys.argv[1])
@@ -33,7 +33,8 @@ queue_splitter.add_output_queue(to_framerate_output_queue)
 queue_splitter.add_output_queue(to_recorder_output_queue)
 framerate_balancer = FramerateLoadBalancer(to_framerate_output_queue, framerate)
 hq_camera_controller = PiCameraCapture(width,height,video_input_queue,framerate)
-video_recorder = VideoRecorder(to_recorder_output_queue,to_recorder_command_queue,"/mnt/data/", (width,height), framerate)
+# video_recorder = VideoRecorder(to_recorder_output_queue,to_recorder_command_queue,"/mnt/data/", (width,height), framerate)
+video_recorder = MotionDetectorProcess(to_recorder_output_queue,"/mnt/data/", (width,height), framerate)
 
 app = Flask(__name__)
 CORS(app)
