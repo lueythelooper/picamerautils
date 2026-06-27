@@ -35,7 +35,7 @@ class PiCameraCapture(Thread):
 
         # Initialize the picam object
         self.picam2 = Picamera2()
-        camera_config = self.picam2.create_video_configuration({"format": "BGR888", "size": (self._width,self._height)}, transform=Transform(hflip=0,vflip=0),
+        camera_config = self.picam2.create_still_configuration({"format": "BGR888", "size": (self._width,self._height)}, transform=Transform(hflip=0,vflip=0),
           controls={"FrameDurationLimits": (EXPOSURE_LIST[0], EXPOSURE_LIST[-1])})
         self.picam2.configure(camera_config)
         self.picam2.controls.ExposureTime = EXPOSURE_LIST[3]
