@@ -69,7 +69,7 @@ class MotionDetectorProcess(Thread):
 
     def get_name(self):
         if os.path.exists(self.save_directory):
-            filename = os.path.join(self.save_directory,datetime.now().strftime("%y%m%d_%H%M%S.mp4"))
+            filename = os.path.join(self.save_directory,datetime.now().strftime("%Y%m%d_%H%M%S.mp4"))
             return filename
 
     def start(self):
