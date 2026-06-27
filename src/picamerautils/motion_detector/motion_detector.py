@@ -40,7 +40,7 @@ class MotionDetector():
         # 5. Draw rectangles around the detected motion
         for contour in contours:
             # Filter out small contours (noise)
-            if cv2.contourArea(contour) < 8000:
+            if cv2.contourArea(contour) < 2000:
                 countour_count -= 1
                 continue
 
