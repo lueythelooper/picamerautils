@@ -12,6 +12,7 @@ from libcamera import controls
 from picamerautils.controllers.hq_camera import PiCameraCapture,FramerateLoadBalancer,EXPOSURE_LIST,GAIN_LIST
 from picamerautils.controllers.queue_splitter import QueueSplitter
 from picamerautils.recorder.video_recorder import VideoRecorder, COMMAND_RECORD, COMMAND_STOP
+from picamerautil.motion_detector.motion_detector import MotionDetectorProcess
 
 
 width = int(sys.argv[1])
